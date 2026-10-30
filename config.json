@@ -1,0 +1,14 @@
+{
+  "firebase": {
+    "apiKey": "AIzaSyC5i-H9XgxWAN1gs533i-HsRo-MciXmDXY",
+    "authDomain": "nba-predict-29464.firebaseapp.com",
+    "projectId": "nba-predict-29464",
+    "storageBucket": "nba-predict-29464.firebasestorage.app",
+    "messagingSenderId": "230552313855",
+    "appId": "1:230552313855:web:c62f1230f328546e5911ca"
+  },
+  "deadline": "2026-11-15T00:00:00+08:00",
+  "actualE": [],
+  "actualW": [],
+  "actualUpdatedAt": ""
+}

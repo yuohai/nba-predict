@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NBA 明星賽前排名預測</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: scoreboard header + tabs; two conference boards side by side, stacked on phones */
+:root {
+  --bg: #eef0f4; --surface: #ffffff; --surface-2: #f6f7fa; --ink: #141a29; --muted: #5d6477;
+  --line: #d9dce5; --accent: #e2570f; --accent-ink: #ffffff;
+  --east: #1d5bbf; --east-soft: #e3ecfb; --west: #b8332a; --west-soft: #f9e4e2;
+  --good: #1d8a4c; --good-soft: #dff3e7; --ok: #a87400; --ok-soft: #fbf0d4; --bad-soft: #eceef2;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Noto Sans TC", sans-serif;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #0e121b; --surface: #171d2a; --surface-2: #1d2433; --ink: #e8ebf2; --muted: #9aa2b6;
+  --line: #2b3346; --accent: #ff7a33; --accent-ink: #1a0d04;
+  --east: #78a8ff; --east-soft: #1b2a47; --west: #ff8a7d; --west-soft: #3d2022;
+  --good: #4fca86; --good-soft: #173526; --ok: #e9b73f; --ok-soft: #3a2f13; --bad-soft: #222a3a;
+  color-scheme: dark; } }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; display: grid; gap: 20px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { display: grid; gap: 6px; }
+.eyebrow { font-family: var(--font-display); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; color: var(--accent); }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(30px, 6vw, 46px); line-height: 1.05; letter-spacing: .01em; }
+.sub { color: var(--muted); max-width: 62ch; margin: 0; }
+.rules { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.rule { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 4px; font-size: 13px; }
+.pt { font-family: var(--font-display); font-weight: 800; font-size: 15px; min-width: 30px; height: 24px; border-radius: 999px; display: inline-grid; place-items: center; padding: 0 6px; font-variant-numeric: tabular-nums; }
+.pt.p3 { background: var(--good-soft); color: var(--good); }
+.pt.p1 { background: var(--ok-soft); color: var(--ok); }
+.pt.p0 { background: var(--bad-soft); color: var(--muted); }
+
+nav.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+nav.tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 14px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+.notice { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--muted); font-size: 14px; }
+.notice strong { color: var(--ink); }
+.notice.warn { border-color: var(--ok); }
+
+.field { display: grid; gap: 6px; max-width: 360px; }
+.field label { font-weight: 700; font-size: 14px; }
+input[type="text"], textarea { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; width: 100%; }
+textarea { min-height: 96px; resize: vertical; font-size: 13px; font-family: ui-monospace, Consolas, monospace; }
+
+.boards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.board { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.board-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.board-head h3 { font-family: var(--font-display); font-weight: 800; font-size: 24px; letter-spacing: .03em; }
+.board.E .board-head h3 { color: var(--east); }
+.board.W .board-head h3 { color: var(--west); }
+.count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+ol.slots { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.slot { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 8px; min-height: 40px; padding: 4px 6px 4px 4px; border-radius: 8px; background: var(--surface-2); border: 1px dashed transparent; }
+.slot.empty { border-color: var(--line); background: transparent; color: var(--muted); }
+.slot.active { border: 1px solid var(--accent); }
+.slot .rk { font-family: var(--font-display); font-weight: 800; font-size: 20px; text-align: center; font-variant-numeric: tabular-nums; color: var(--muted); }
+.slot .tm { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.slot .tm b { font-weight: 700; }
+.abbr { font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .06em; color: var(--muted); }
+.slot-btn { all: unset; cursor: pointer; display: block; width: 100%; }
+.ctl { display: flex; gap: 2px; }
+.ctl button { background: none; border: 1px solid var(--line); border-radius: 6px; width: 30px; height: 28px; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+.ctl button:hover { color: var(--ink); border-color: var(--muted); }
+.ctl button:disabled { opacity: .35; cursor: default; }
+
+.pool-label { font-size: 13px; color: var(--muted); }
+.pool { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 14px; display: inline-flex; gap: 6px; align-items: baseline; }
+.board.E .chip:hover { border-color: var(--east); background: var(--east-soft); }
+.board.W .chip:hover { border-color: var(--west); background: var(--west-soft); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn { border-radius: 8px; padding: 10px 18px; font-weight: 700; border: 1px solid var(--line); background: var(--surface); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: default; }
+.msg { font-size: 14px; color: var(--muted); }
+.msg.err { color: var(--west); }
+.msg.okay { color: var(--good); }
+.confirm { background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
+.locked-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--good); background: var(--good-soft); border-radius: 999px; padding: 3px 10px; }
+
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: .06em; }
+td.num, th.num { text-align: right; }
+tr.row { cursor: pointer; }
+tr.row:hover td { background: var(--surface-2); }
+tr.me td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.big { font-family: var(--font-display); font-weight: 800; font-size: 22px; }
+.place { font-family: var(--font-display); font-weight: 800; font-size: 20px; color: var(--muted); }
+.place.p1st { color: var(--accent); }
+tr.detail td { background: var(--surface-2); white-space: normal; }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; padding: 4px 0; }
+.mini h4 { margin: 0 0 6px; font-family: var(--font-display); font-size: 18px; letter-spacing: .04em; }
+.mini.E h4 { color: var(--east); } .mini.W h4 { color: var(--west); }
+.mini ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.mini li { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; font-size: 14px; }
+.mini .n { font-family: var(--font-display); font-weight: 700; color: var(--muted); text-align: right; }
+.mini .real { font-size: 12px; color: var(--muted); }
+
+section.panel { display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; }
+.card h3 { font-size: 17px; }
+.copy-out { display: grid; gap: 6px; }
+
+@media (prefers-reduced-motion: no-preference) { .slot, .chip, .btn { transition: background .12s, border-color .12s; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">2026–27 例行賽 · 明星賽前戰績</div>
+    <h1>NBA 明星賽前排名預測</h1>
+    <p class="sub">猜東、西區明星賽前的第 1～10 名。送出後就鎖定不能改，明星賽一到，主辦人公布實際排名，排行榜自動算分。</p>
+    <div class="rules">
+      <span class="rule"><span class="pt p3">+3</span>球隊和名次都對</span>
+      <span class="rule"><span class="pt p1">+1</span>球隊有進前十，名次不對</span>
+      <span class="rule"><span class="pt p0">0</span>球隊沒進前十</span>
+      <span class="rule"><span class="pt p0">60</span>滿分</span>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-predict" data-tab="predict" aria-selected="true">我的預測</button>
+    <button role="tab" id="tab-board" data-tab="board" aria-selected="false">排行榜</button>
+    <button role="tab" id="tab-admin" data-tab="admin" aria-selected="false" hidden>主辦人工具</button>
+  </nav>
+
+  <div id="status" class="notice" hidden></div>
+
+  <section class="panel" id="panel-predict"></section>
+  <section class="panel" id="panel-board" hidden></section>
+  <section class="panel" id="panel-admin" hidden></section>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const EAST = [["ATL","老鷹"],["BOS","塞爾提克"],["BKN","籃網"],["CHA","黃蜂"],["CHI","公牛"],["CLE","騎士"],["DET","活塞"],["IND","溜馬"],["MIA","熱火"],["MIL","公鹿"],["NYK","尼克"],["ORL","魔術"],["PHI","76人"],["TOR","暴龍"],["WAS","巫師"]];
+const WEST = [["DAL","獨行俠"],["DEN","金塊"],["GSW","勇士"],["HOU","火箭"],["LAC","快艇"],["LAL","湖人"],["MEM","灰熊"],["MIN","灰狼"],["NOP","鵜鶘"],["OKC","雷霆"],["PHX","太陽"],["POR","拓荒者"],["SAC","國王"],["SAS","馬刺"],["UTA","爵士"]];
+const CONF = { E: { name: "東區", teams: EAST }, W: { name: "西區", teams: WEST } };
+const TEAM = {};
+EAST.forEach(([c, n]) => TEAM[c] = { code: c, name: n, conf: "E" });
+WEST.forEach(([c, n]) => TEAM[c] = { code: c, name: n, conf: "W" });
+const N = 10;
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const empty10 = () => Array(N).fill(null);
+const fmtTime = (iso) => { if (!iso) return ""; try { return new Date(iso).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
+const tsToIso = (t) => t && t.toDate ? t.toDate().toISOString() : "";
+
+const S = {
+  db: null, ready: false, setupError: null,
+  config: {}, entrants: [], picks: [], picksLoaded: false, tab: "predict",
+  draft: { name: "", E: empty10(), W: empty10() },
+  actual: { E: empty10(), W: empty10() },
+  mine: null, active: {}, confirming: false, submitting: false, msg: null, copyText: null, openRow: null,
+};
+
+// ---------- local storage: unsent draft + this device's submitted entry ----------
+function load(key) { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch { return null; } }
+function store(key, val) { try { val == null ? localStorage.removeItem(key) : localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+function clean(arr, conf) {
+  const out = empty10(), seen = new Set();
+  (arr || []).slice(0, N).forEach((c, i) => { if (TEAM[c] && TEAM[c].conf === conf && !seen.has(c)) { out[i] = c; seen.add(c); } });
+  return out;
+}
+const savedDraft = load("nba-draft");
+if (savedDraft) S.draft = { name: savedDraft.name || "", E: clean(savedDraft.E, "E"), W: clean(savedDraft.W, "W") };
+S.mine = load("nba-mine");
+const saveDraft = () => store("nba-draft", S.draft);
+
+// ---------- scoring ----------
+function scoreConf(pred, act) {
+  const per = pred.map((c, i) => !c ? 0 : act[i] === c ? 3 : act.includes(c) ? 1 : 0);
+  return { pts: per.reduce((a, b) => a + b, 0), exact: per.filter((p) => p === 3).length, per };
+}
+const isFull = (a) => Array.isArray(a) && a.length === N && a.every(Boolean);
+const actualReady = () => isFull(S.config.actualE) && isFull(S.config.actualW);
+const deadline = () => S.config.deadline ? new Date(S.config.deadline) : null;
+const closed = () => { const d = deadline(); return !!d && Date.now() >= d.getTime(); };
+
+function makeShareText(name, E, W) {
+  const line = (arr) => arr.map((c, i) => `${i + 1} ${TEAM[c].name}`).join(" · ");
+  return `NBA 明星賽前排名預測：${name}\n東區：${line(E)}\n西區：${line(W)}`;
+}
+
+// ---------- picker ----------
+function getArr(pk) { const [who, conf] = pk.split("-"); return who === "mine" ? S.draft[conf] : S.actual[conf]; }
+function pickerHTML(pk, conf) {
+  const arr = getArr(pk);
+  const filled = arr.filter(Boolean).length;
+  const act = S.active[pk];
+  const used = new Set(arr.filter(Boolean));
+  let html = `<div class="board ${conf}"><div class="board-head"><h3>${CONF[conf].name}</h3><span class="count">${filled} / ${N}</span></div><ol class="slots">`;
+  arr.forEach((c, i) => {
+    if (c) {
+      html += `<li class="slot"><span class="rk">${i + 1}</span><span class="tm"><b>${TEAM[c].name}</b><span class="abbr">${c}</span></span><span class="ctl"><button data-pk="${pk}" data-act="up" data-i="${i}" aria-label="往上" ${i === 0 ? "disabled" : ""}>▲</button><button data-pk="${pk}" data-act="down" data-i="${i}" aria-label="往下" ${i === N - 1 ? "disabled" : ""}>▼</button><button data-pk="${pk}" data-act="clear" data-i="${i}" aria-label="移除">✕</button></span></li>`;
+    } else {
+      html += `<li class="slot empty${act === i ? " active" : ""}"><span class="rk">${i + 1}</span><button class="slot-btn" data-pk="${pk}" data-act="target" data-i="${i}">${act === i ? "下一隊放這格" : "點下方球隊放入"}</button><span></span></li>`;
+    }
+  });
+  html += `</ol>`;
+  const pool = CONF[conf].teams.filter(([c]) => !used.has(c));
+  html += `<div class="pool-label">${filled < N ? "點球隊依序放入（可先點空格指定位置）" : "前十已滿；剩下的球隊不在榜上"}</div><div class="pool">` +
+    pool.map(([c, n]) => `<button class="chip" data-pk="${pk}" data-act="add" data-code="${c}" ${filled >= N ? "disabled" : ""}>${n} <span class="abbr">${c}</span></button>`).join("") + `</div>`;
+  return html + `</div>`;
+}
+function pickerAction(pk, act, i, code) {
+  const arr = getArr(pk);
+  if (act === "add") {
+    let at = S.active[pk];
+    if (at == null || arr[at]) at = arr.indexOf(null);
+    if (at < 0) return;
+    arr[at] = code; S.active[pk] = null;
+  } else if (act === "target") { S.active[pk] = S.active[pk] === i ? null : i; }
+  else if (act === "clear") { arr[i] = null; }
+  else if (act === "up" && i > 0) { [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]]; }
+  else if (act === "down" && i < N - 1) { [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]]; }
+  if (pk.startsWith("mine")) { saveDraft(); S.confirming = false; }
+  render();
+}
+
+// ---------- predict tab ----------
+function readonlyBoard(conf, arr) {
+  return `<div class="board ${conf}"><div class="board-head"><h3>${CONF[conf].name}</h3></div><ol class="slots">` +
+    arr.map((c, i) => `<li class="slot"><span class="rk">${i + 1}</span><span class="tm"><b>${TEAM[c]?.name || "—"}</b><span class="abbr">${c || ""}</span></span><span></span></li>`).join("") + `</ol></div>`;
+}
+function copyArea(text) {
+  if (S.copyText !== text) return "";
+  return `<div class="copy-out"><span class="msg" id="copyMsg"></span><textarea id="copyBox" readonly>${esc(text)}</textarea></div>`;
+}
+function renderPredict() {
+  const el = $("#panel-predict");
+  const m = S.mine;
+  if (m) {
+    const share = makeShareText(m.name, m.E, m.W);
+    el.innerHTML = `<div class="card"><div class="actions"><span class="locked-badge">已鎖定</span><span class="msg">${esc(m.name)} · ${fmtTime(m.submittedAt)} 送出</span></div>
+      <p class="msg" style="margin:0">預測送出後就不能修改。截止後可以在「排行榜」看到所有人的預測。</p></div>
+      <div class="boards">${readonlyBoard("E", m.E)}${readonlyBoard("W", m.W)}</div>
+      <div class="actions"><button class="btn" id="copyLocked">複製預測文字（貼到 DC 炫耀）</button><button class="btn" id="forgetMine">這台裝置要幫別人填</button></div>
+      ${copyArea(share)}`;
+    return;
+  }
+  if (closed()) {
+    el.innerHTML = `<div class="notice"><strong>預測已截止</strong>（${fmtTime(S.config.deadline)}）。到「排行榜」看大家的預測和分數。</div>`;
+    return;
+  }
+  const full = S.draft.E.every(Boolean) && S.draft.W.every(Boolean);
+  const name = S.draft.name.trim();
+  const nameOk = name.length > 0 && !name.includes("/");
+  const taken = nameOk && S.entrants.some((e) => e.name === name);
+  let html = `<div class="field"><label for="nameInput">你的名字（DC 暱稱）</label><input type="text" id="nameInput" maxlength="24" placeholder="例如：金塊總冠軍" value="${esc(S.draft.name)}"></div>`;
+  if (deadline()) html += `<div class="msg">截止時間：<strong>${fmtTime(S.config.deadline)}</strong></div>`;
+  html += `<div class="boards">${pickerHTML("mine-E", "E")}${pickerHTML("mine-W", "W")}</div>`;
+  if (S.confirming) {
+    html += `<div class="confirm"><strong>確定送出「${esc(name)}」的預測？</strong><span class="msg">送出後無法修改，也不能用同一個名字再送一次。</span>
+      <div class="actions"><button class="btn primary" id="confirmSubmit" ${S.submitting ? "disabled" : ""}>${S.submitting ? "送出中…" : "確認送出"}</button><button class="btn" id="cancelSubmit">再想想</button></div></div>`;
+  } else {
+    const hint = !name ? "先填名字。" : name.includes("/") ? "名字不能有「/」。" : taken ? `「${name}」已經有人用了，換一個名字。`
+      : !full ? `東區還差 ${S.draft.E.filter((x) => !x).length} 隊，西區還差 ${S.draft.W.filter((x) => !x).length} 隊。` : "全部填好了。";
+    html += `<div class="actions"><button class="btn primary" id="submitBtn" ${full && nameOk && !taken && S.db ? "" : "disabled"}>送出預測</button>
+      <button class="btn" id="resetDraft">清空重填</button><span class="msg">${esc(hint)}</span></div>`;
+  }
+  if (S.msg) html += `<div class="msg ${S.msg.kind}">${esc(S.msg.text)}</div>`;
+  el.innerHTML = html;
+}
+
+async function submit() {
+  const name = S.draft.name.trim();
+  S.submitting = true; S.msg = null; render();
+  const E = S.draft.E.slice(), W = S.draft.W.slice();
+  try {
+    const batch = writeBatch(S.db);
+    batch.set(doc(S.db, "picks", name), { name, E, W, submittedAt: serverTimestamp() });
+    batch.set(doc(S.db, "entrants", name), { name, submittedAt: serverTimestamp() });
+    await batch.commit();
+    S.mine = { name, E, W, submittedAt: new Date().toISOString() };
+    store("nba-mine", S.mine); store("nba-draft", null);
+    S.draft = { name: "", E: empty10(), W: empty10() };
+  } catch (e) {
+    S.msg = { kind: "err", text: e && e.code === "permission-denied"
+      ? "送不出去：可能這個名字已經有人用了，或已經過了截止時間。"
+      : "送出失敗，請檢查網路後再試一次。" };
+  }
+  S.submitting = false; S.confirming = false; render();
+}
+
+// ---------- leaderboard ----------
+function rankedEntries() {
+  const aE = S.config.actualE, aW = S.config.actualW;
+  const scored = S.picks.map((p) => {
+    const e = scoreConf(p.E, aE), w = scoreConf(p.W, aW);
+    return { ...p, e, w, total: e.pts + w.pts, exact: e.exact + w.exact };
+  });
+  scored.sort((a, b) => b.total - a.total || b.exact - a.exact || a.submittedAt.localeCompare(b.submittedAt));
+  let place = 0;
+  scored.forEach((s, i) => { if (i === 0 || s.total !== scored[i - 1].total || s.exact !== scored[i - 1].exact) place = i + 1; s.place = place; });
+  return scored;
+}
+function miniList(conf, pred, act, per) {
+  return `<div class="mini ${conf}"><h4>${CONF[conf].name}</h4><ol>` + pred.map((c, i) => {
+    const p = per ? per[i] : null;
+    const real = act && act[i] ? `<span class="real">實際：${TEAM[act[i]].name}</span>` : "";
+    return `<li><span class="n">${i + 1}</span><span>${TEAM[c]?.name || c} ${real}</span>${p == null ? "<span></span>" : `<span class="pt p${p}">${p ? "+" + p : 0}</span>`}</li>`;
+  }).join("") + `</ol></div>`;
+}
+function renderBoard() {
+  const el = $("#panel-board");
+  const myName = S.mine && S.mine.name;
+  let html = "";
+  if (!closed()) {
+    // Before the deadline the database refuses to hand out anyone's picks: show who has entered
+    html += `<div class="notice">截止（${fmtTime(S.config.deadline)}）前看不到別人的預測，截止後這裡會列出所有人的預測${actualReady() ? "和分數" : ""}。</div>`;
+    if (!S.entrants.length) html += `<div class="notice"><strong>還沒有人送出預測。</strong> 到「我的預測」排好東西區前十名，第一個送出的人會出現在這裡。</div>`;
+    else html += `<div class="table-wrap"><table><thead><tr><th>已送出（${S.entrants.length} 人）</th><th>送出時間</th></tr></thead><tbody>` +
+      S.entrants.map((e) => `<tr class="${e.name === myName ? "me" : ""}"><td><strong>${esc(e.name)}</strong>${e.name === myName ? ` <span class="msg">（你）</span>` : ""}</td><td>${fmtTime(e.submittedAt)}</td></tr>`).join("") + `</tbody></table></div>`;
+    el.innerHTML = html;
+    return;
+  }
+  const ready = actualReady();
+  if (!S.picksLoaded) html += `<div class="notice">讀取中…</div>`;
+  else if (!S.picks.length) html += `<div class="notice">沒有人送出預測。</div>`;
+  else {
+    if (!ready) html += `<div class="notice">主辦人還沒公布實際排名，公布後就會算分。點名字可以看他的預測。</div>`;
+    const rows = ready ? rankedEntries() : S.picks;
+    html += `<div class="table-wrap"><table><thead><tr>${ready ? `<th>名次</th>` : ""}<th>預測人</th>${ready ? `<th class="num">總分</th><th class="num">東區</th><th class="num">西區</th><th class="num">完全命中</th>` : `<th>送出時間</th>`}</tr></thead><tbody>`;
+    rows.forEach((r, idx) => {
+      const isMe = r.name === myName;
+      html += `<tr class="row${isMe ? " me" : ""}" data-row="${idx}">${ready ? `<td><span class="place${r.place === 1 ? " p1st" : ""}">${r.place}</span></td>` : ""}<td><strong>${esc(r.name)}</strong>${isMe ? ` <span class="msg">（你）</span>` : ""}</td>` +
+        (ready ? `<td class="num"><span class="big">${r.total}</span></td><td class="num">${r.e.pts}</td><td class="num">${r.w.pts}</td><td class="num">${r.exact}</td>` : `<td>${fmtTime(r.submittedAt)}</td>`) + `</tr>`;
+      if (S.openRow === r.name) {
+        html += `<tr class="detail"><td colspan="${ready ? 6 : 2}"><div class="detail-grid">${miniList("E", r.E, ready ? S.config.actualE : null, ready ? r.e.per : null)}${miniList("W", r.W, ready ? S.config.actualW : null, ready ? r.w.per : null)}</div></td></tr>`;
+      }
+    });
+    html += `</tbody></table></div>`;
+    if (ready) html += `<div class="msg">同分時，完全命中多的排前面；再同分就比誰早送出。</div>`;
+  }
+  if (ready) html += `<h3 style="margin-top:8px">實際排名${S.config.actualUpdatedAt ? ` <span class="msg">（${esc(S.config.actualUpdatedAt)}）</span>` : ""}</h3><div class="boards">${readonlyBoard("E", S.config.actualE)}${readonlyBoard("W", S.config.actualW)}</div>`;
+  el.innerHTML = html;
+}
+
+// ---------- organizer tool: builds the lines to paste into config.json ----------
+function renderAdmin() {
+  const el = $("#panel-admin");
+  const full = S.actual.E.every(Boolean) && S.actual.W.every(Boolean);
+  const snippet = full ? `"actualE": ${JSON.stringify(S.actual.E)},\n"actualW": ${JSON.stringify(S.actual.W)},\n"actualUpdatedAt": "${new Date().toLocaleDateString("zh-TW")} 更新"` : "";
+  el.innerHTML = `<div class="notice">這頁是給主辦人用的。排好實際排名後，把下面產生的三行貼進 GitHub 上的 <strong>config.json</strong>，取代原本的 actualE、actualW、actualUpdatedAt 三行，存檔後約一分鐘網站就會更新。</div>
+    <div class="boards">${pickerHTML("act-E", "E")}${pickerHTML("act-W", "W")}</div>
+    <div class="actions"><button class="btn primary" id="copySnippet" ${full ? "" : "disabled"}>複製設定文字</button><span class="msg">${full ? "" : "東西區都要填滿 10 隊。"}</span></div>
+    ${full ? copyArea(snippet) || `<textarea readonly>${esc(snippet)}</textarea>` : ""}`;
+}
+
+// ---------- render + events ----------
+function render() {
+  document.querySelectorAll("nav.tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
+  $("#tab-admin").hidden = S.tab !== "admin";
+  ["predict", "board", "admin"].forEach((t) => $("#panel-" + t).hidden = S.tab !== t);
+  const st = $("#status");
+  if (S.setupError) { st.hidden = false; st.className = "notice warn"; st.innerHTML = S.setupError; }
+  else st.hidden = true;
+  const focusId = document.activeElement && document.activeElement.id;
+  const caret = focusId === "nameInput" ? document.activeElement.selectionStart : null;
+  renderPredict(); renderBoard(); if (S.tab === "admin") renderAdmin();
+  if (focusId) { const f = document.getElementById(focusId); if (f) { f.focus(); if (caret != null && f.setSelectionRange) f.setSelectionRange(caret, caret); } }
+}
+function setTab(t) { S.tab = t; render(); }
+
+async function doCopy(text) {
+  S.copyText = text; render();
+  const box = $("#copyBox"), msg = $("#copyMsg");
+  try { await navigator.clipboard.writeText(text); if (msg) { msg.textContent = "已複製。"; msg.className = "msg okay"; } }
+  catch { if (box) { box.focus(); box.select(); } if (msg) msg.textContent = "請手動複製下面的文字（已幫你選好）。"; }
+}
+
+document.addEventListener("click", (ev) => {
+  const t = ev.target.closest("button, tr.row");
+  if (!t) return;
+  if (t.dataset.tab) return setTab(t.dataset.tab);
+  if (t.dataset.pk) return pickerAction(t.dataset.pk, t.dataset.act, Number(t.dataset.i), t.dataset.code);
+  if (t.dataset.row != null) {
+    const rows = actualReady() ? rankedEntries() : S.picks;
+    const name = rows[Number(t.dataset.row)]?.name;
+    S.openRow = S.openRow === name ? null : name; return render();
+  }
+  switch (t.id) {
+    case "submitBtn": S.confirming = true; S.msg = null; return render();
+    case "cancelSubmit": S.confirming = false; return render();
+    case "confirmSubmit": return submit();
+    case "resetDraft": S.draft.E = empty10(); S.draft.W = empty10(); S.active = {}; saveDraft(); return render();
+    case "copyLocked": return doCopy(makeShareText(S.mine.name, S.mine.E, S.mine.W));
+    case "forgetMine": S.mine = null; store("nba-mine", null); S.copyText = null; return render();
+    case "copySnippet": return doCopy(`"actualE": ${JSON.stringify(S.actual.E)},\n"actualW": ${JSON.stringify(S.actual.W)},\n"actualUpdatedAt": "${new Date().toLocaleDateString("zh-TW")} 更新"`);
+  }
+});
+document.addEventListener("input", (ev) => {
+  if (ev.target.id === "nameInput") { S.draft.name = ev.target.value; saveDraft(); S.confirming = false; clearTimeout(S._nt); S._nt = setTimeout(render, 250); }
+});
+
+// ---------- boot ----------
+if (location.hash === "#admin") S.tab = "admin";
+else if (location.hash === "#board") S.tab = "board";
+render();
+
+(async () => {
+  try {
+    const res = await fetch("config.json", { cache: "no-store" });
+    S.config = await res.json();
+  } catch {
+    S.setupError = "<strong>讀不到 config.json。</strong> 請確認它和 index.html 放在同一個資料夾，而且格式正確（可以貼到 jsonlint.com 檢查）。";
+    return render();
+  }
+  S.actual = { E: clean(S.config.actualE, "E"), W: clean(S.config.actualW, "W") };
+  const fb = S.config.firebase || {};
+  if (!fb.apiKey || fb.apiKey.includes("貼上")) {
+    S.setupError = "<strong>還沒設定 Firebase。</strong> 請把 Firebase 給你的設定貼進 config.json 的 firebase 欄位。";
+    return render();
+  }
+  S.db = getFirestore(initializeApp(fb));
+  render();
+  onSnapshot(collection(S.db, "entrants"), (snap) => {
+    S.entrants = snap.docs.map((d) => ({ name: String(d.data().name || d.id), submittedAt: tsToIso(d.data().submittedAt) }))
+      .sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
+    render();
+  }, () => { S.setupError = "<strong>讀不到資料庫。</strong> 請確認 Firestore 已建立，而且規則已經發布。"; render(); });
+
+  // Picks only become readable after the deadline (enforced by the database rules)
+  let picksOn = false;
+  const watchPicks = () => {
+    if (picksOn || !closed()) return;
+    picksOn = true;
+    onSnapshot(collection(S.db, "picks"), (snap) => {
+      S.picks = snap.docs.map((d) => {
+        const x = d.data();
+        return { name: String(x.name || d.id), E: clean(x.E, "E"), W: clean(x.W, "W"), submittedAt: tsToIso(x.submittedAt) };
+      }).sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
+      S.picksLoaded = true; render();
+    }, () => { picksOn = false; });
+  };
+  watchPicks();
+  setInterval(() => { if (closed() && !picksOn) { watchPicks(); render(); } }, 30000);
+})();
+</script>
+</body>
+</html>
